@@ -1,9 +1,33 @@
 {
   "name": "aws-codebuild-status",
   "displayName": "AWS CodeBuild Status",
-  "description": "View recent AWS CodeBuild build statuses in a tree, grouped by region, using your local AWS CLI.",
+  "description": "View recent AWS CodeBuild build statuses in a tree, grouped by region and project, using your local AWS CLI.",
   "version": "0.1.0",
-  "publisher": "local",
+  "publisher": "baebranch",
+  "author": {
+    "name": "Brian Branch"
+  },
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "homepage": "https://github.com/baebranch/aws-codebuild-status#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/baebranch/aws-codebuild-status.git"
+  },
+  "bugs": {
+    "url": "https://github.com/baebranch/aws-codebuild-status/issues"
+  },
+  "keywords": [
+    "aws",
+    "codebuild",
+    "ci",
+    "build",
+    "status"
+  ],
+  "galleryBanner": {
+    "color": "#0d1526",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -105,11 +129,14 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@types/node": "^18.19.0",
     "@types/vscode": "^1.75.0",
+    "@vscode/vsce": "^3.9.2",
     "typescript": "^5.4.0"
   }
 }

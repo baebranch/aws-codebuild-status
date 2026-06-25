@@ -64,3 +64,12 @@ npm run compile
 
 Then press **F5** in VS Code (Run Extension) to launch an Extension Development
 Host with the view available in the activity bar.
+
+## Packaging / publishing
+
+```bash
+npm run package   # build a .vsix
+npm run publish   # publish to the Marketplace (requires a vsce login)
+```
+
+See [PUBLISHING.md](./PUBLISHING.md) for the full first-time setup.

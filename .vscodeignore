@@ -1,6 +1,10 @@
 .vscode/**
 src/**
 node_modules/**
+scripts/**
 tsconfig.json
 **/*.map
 .gitignore
+PUBLISHING.md
+media/icon.svg
+*.vsix
