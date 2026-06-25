@@ -8,3 +8,4 @@ tsconfig.json
 PUBLISHING.md
 media/icon.svg
 *.vsix
+secrets/*
