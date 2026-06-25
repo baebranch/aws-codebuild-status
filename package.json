@@ -1,0 +1,115 @@
+{
+  "name": "aws-codebuild-status",
+  "displayName": "AWS CodeBuild Status",
+  "description": "View recent AWS CodeBuild build statuses in a tree, grouped by region, using your local AWS CLI.",
+  "version": "0.1.0",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "awsCodeBuild",
+          "title": "AWS CodeBuild",
+          "icon": "media/codebuild.svg"
+        }
+      ]
+    },
+    "views": {
+      "awsCodeBuild": [
+        {
+          "id": "awsCodeBuild.buildsView",
+          "name": "Builds",
+          "icon": "media/codebuild.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "awsCodeBuild.refresh",
+        "title": "Refresh",
+        "category": "AWS CodeBuild",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "awsCodeBuild.loadMore",
+        "title": "Load More",
+        "category": "AWS CodeBuild"
+      },
+      {
+        "command": "awsCodeBuild.openInConsole",
+        "title": "Open in AWS Console",
+        "category": "AWS CodeBuild",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "awsCodeBuild.openLogs",
+        "title": "View Build Logs",
+        "category": "AWS CodeBuild",
+        "icon": "$(output)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "awsCodeBuild.refresh",
+          "when": "view == awsCodeBuild.buildsView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "awsCodeBuild.openLogs",
+          "when": "view == awsCodeBuild.buildsView && viewItem == build",
+          "group": "inline"
+        },
+        {
+          "command": "awsCodeBuild.openInConsole",
+          "when": "view == awsCodeBuild.buildsView && viewItem == build"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AWS CodeBuild Status",
+      "properties": {
+        "awsCodeBuild.regions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "AWS regions to query for CodeBuild builds. If empty, the default region from your AWS CLI configuration is used."
+        },
+        "awsCodeBuild.profile": {
+          "type": "string",
+          "default": "",
+          "description": "AWS CLI named profile to use. If empty, the default profile / environment credentials are used."
+        },
+        "awsCodeBuild.pageSize": {
+          "type": "number",
+          "default": 20,
+          "minimum": 1,
+          "maximum": 100,
+          "description": "Number of builds to load per page, per region."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.4.0"
+  }
+}
