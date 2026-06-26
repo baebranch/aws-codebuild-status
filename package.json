@@ -131,12 +131,14 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
-    "publish": "vsce publish"
+    "publish": "vsce publish",
+    "publish:ovsx": "ovsx publish"
   },
   "devDependencies": {
     "@types/node": "^18.19.0",
     "@types/vscode": "^1.75.0",
     "@vscode/vsce": "^3.9.2",
+    "ovsx": "^1.0.2",
     "typescript": "^5.4.0"
   }
 }
