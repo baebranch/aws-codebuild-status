@@ -1,5 +1,10 @@
 import * as vscode from "vscode";
-import { BuildNode, CodeBuildTreeProvider, LoadMoreNode } from "./treeProvider";
+import {
+  BuildNode,
+  CodeBuildTreeProvider,
+  LoadMoreNode,
+  ProjectNode,
+} from "./treeProvider";
 import { LOGS_SCHEME, LogsContentProvider, buildLogUri } from "./logsDocument";
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -26,6 +31,29 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("awsCodeBuild.loadMore", (node: LoadMoreNode) => {
       if (node && node.kind === "loadMore") {
         return provider.loadMore(node.state);
+      }
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("awsCodeBuild.startBuild", async (node: ProjectNode) => {
+      if (!node || node.kind !== "project") {
+        return;
+      }
+
+      const projectName = node.state.projectName;
+      try {
+        await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: `Starting CodeBuild project ${projectName}…`,
+          },
+          () => provider.startBuild(node)
+        );
+        vscode.window.showInformationMessage(`Started build for ${projectName}.`);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        vscode.window.showErrorMessage(`Unable to start build for ${projectName}: ${message}`);
       }
     })
   );

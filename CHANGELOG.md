@@ -5,9 +5,17 @@ All notable changes to the "AWS CodeBuild Status" extension are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-16
+
+### Added in 0.2.0
+
+- **Start Build** in the project context menu to trigger a new CodeBuild run
+  through the configured local AWS CLI profile and selected region.
+
 ## [0.1.0] - 2026-06-25
 
-### Added
+### Added in 0.1.0
+
 - Tree view in a dedicated **AWS CodeBuild** activity bar container.
 - Region → Project → build history hierarchy, driven by the local AWS CLI.
 - Per-project pagination with a **Load more…** action that shows a disabled

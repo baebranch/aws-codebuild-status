@@ -119,6 +119,19 @@ export async function getDefaultRegion(options: AwsOptions): Promise<string | un
   }
 }
 
+/** Starts a new build for the specified CodeBuild project. */
+export async function startBuild(
+  options: AwsOptions,
+  projectName: string
+): Promise<CodeBuildBuild | undefined> {
+  const stdout = await runAws(
+    ["codebuild", "start-build", "--project-name", projectName],
+    options
+  );
+  const parsed = JSON.parse(stdout || "{}");
+  return parsed.build as CodeBuildBuild | undefined;
+}
+
 /**
  * Lists every CodeBuild project name in a region (following pagination),
  * sorted by name ascending.

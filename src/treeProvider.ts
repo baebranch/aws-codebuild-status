@@ -7,6 +7,7 @@ import {
   getDefaultRegion,
   listAllProjects,
   listBuildsForProject,
+  startBuild as startCodeBuild,
 } from "./aws";
 
 type TreeNode = RegionNode | ProjectNode | BuildNode | LoadMoreNode | MessageNode;
@@ -241,6 +242,16 @@ export class CodeBuildTreeProvider implements vscode.TreeDataProvider<TreeNode> 
       state.loading = false;
       this._onDidChangeTreeData.fire();
     }
+  }
+
+  /** Starts a build for a project and reloads the tree to show the new run. */
+  async startBuild(node: ProjectNode): Promise<void> {
+    const { state } = node;
+    await startCodeBuild(
+      { ...this.awsOptions, region: state.region },
+      state.projectName
+    );
+    this.refresh();
   }
 
   getTreeItem(node: TreeNode): vscode.TreeItem {

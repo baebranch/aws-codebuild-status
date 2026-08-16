@@ -3,3 +3,4 @@ out/
 secrets/*
 *.vsix
 .vscode-test/
+PUBLISHING.md

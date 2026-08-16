@@ -2,7 +2,7 @@
   "name": "aws-codebuild-status",
   "displayName": "AWS CodeBuild Status",
   "description": "View recent AWS CodeBuild build statuses in a tree, grouped by region and project, using your local AWS CLI.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "baebranch",
   "author": {
     "name": "Brian Branch"
@@ -68,6 +68,12 @@
         "category": "AWS CodeBuild"
       },
       {
+        "command": "awsCodeBuild.startBuild",
+        "title": "Start Build",
+        "category": "AWS CodeBuild",
+        "icon": "$(play)"
+      },
+      {
         "command": "awsCodeBuild.openInConsole",
         "title": "Open in AWS Console",
         "category": "AWS CodeBuild",
@@ -89,6 +95,11 @@
         }
       ],
       "view/item/context": [
+        {
+          "command": "awsCodeBuild.startBuild",
+          "when": "view == awsCodeBuild.buildsView && viewItem == project",
+          "group": "navigation"
+        },
         {
           "command": "awsCodeBuild.openLogs",
           "when": "view == awsCodeBuild.buildsView && viewItem == build",

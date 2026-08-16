@@ -11,6 +11,14 @@ configured AWS CLI, so there are no credentials to manage inside the extension.
 - AWS authentication must already be configured (e.g. `aws configure`, SSO, or
   environment variables). The extension reuses whatever the CLI uses.
 
+## IAM permissions
+
+The configured AWS identity needs these permissions in each region it will use:
+`codebuild:ListProjects`, `codebuild:ListBuildsForProject`,
+`codebuild:BatchGetBuilds`, `codebuild:StartBuild`, and
+`logs:GetLogEvents`. Scope the permissions to the CodeBuild projects and log
+streams appropriate for your environment.
+
 ## Features
 
 - Tree view in a dedicated **AWS CodeBuild** activity bar container.
@@ -27,6 +35,7 @@ configured AWS CLI, so there are no credentials to manage inside the extension.
 - Click a build to open its CloudWatch logs in a read‑only editor tab (fetched
   via the AWS CLI). "Open in AWS Console" is still available from the right‑click
   menu.
+- Right-click a project to start a new build (requires `codebuild:StartBuild`).
 - Refresh button in the view title.
 
 ## Settings
@@ -45,7 +54,9 @@ Under the hood the extension runs:
 - `aws codebuild list-builds-for-project --project-name <name> --sort-order DESCENDING --max-items <pageSize>`
   to get build IDs a page at a time (using the CLI's `--starting-token` for
   pagination), and
-- `aws codebuild batch-get-builds --ids ...` to fetch details for each page, and
+- `aws codebuild batch-get-builds --ids ...` to fetch details for each page,
+- `aws codebuild start-build --project-name <name>` when you start a project from
+  its context menu, and
 - `aws logs get-log-events --log-group-name <g> --log-stream-name <s>` to load a
   build's logs into an editor tab on demand.
 
