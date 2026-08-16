@@ -82,5 +82,3 @@ Host with the view available in the activity bar.
 npm run package   # build a .vsix
 npm run publish   # publish to the Marketplace (requires a vsce login)
 ```
-
-See [PUBLISHING.md](./PUBLISHING.md) for the full first-time setup.
