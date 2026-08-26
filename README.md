@@ -1,8 +1,8 @@
-# AWS CodeBuild Status
+# AWS Build & Compute Status
 
-A VS Code extension that shows recent AWS CodeBuild build statuses in a tree view
-in the side panel, grouped by region. It uses your locally installed and
-configured AWS CLI, so there are no credentials to manage inside the extension.
+A VS Code extension that shows recent AWS CodeBuild builds and EC2 instances in a
+regional tree view. It uses your locally installed and configured AWS CLI, so
+there are no credentials to manage inside the extension.
 
 ## Requirements
 
@@ -15,28 +15,31 @@ configured AWS CLI, so there are no credentials to manage inside the extension.
 
 The configured AWS identity needs these permissions in each region it will use:
 `codebuild:ListProjects`, `codebuild:ListBuildsForProject`,
-`codebuild:BatchGetBuilds`, `codebuild:StartBuild`, and
-`logs:GetLogEvents`. Scope the permissions to the CodeBuild projects and log
-streams appropriate for your environment.
+`codebuild:BatchGetBuilds`, `codebuild:StartBuild`, `ec2:DescribeInstances`,
+`ec2:DescribeInstanceStatus`, and `logs:GetLogEvents`. Scope permissions to the
+CodeBuild projects, EC2 instances, and log streams appropriate for your
+environment.
 
 ## Features
 
-- Tree view in a dedicated **AWS CodeBuild** activity bar container.
-- Three-level hierarchy: **Region → Project → build history**. Expand a region
-  to see its CodeBuild projects, then expand a project to see its recent builds.
-- Each project loads the first 20 builds, with a **Load more…** item at the
-  bottom of its list to fetch the next page. While a page is loading, that item
-  turns into a disabled spinner so it can't be clicked again, then returns to a
-  normal button when done.
-- Running (in‑progress) builds are sorted to the top of each project's list, and
-  a project showing active builds displays a spinner with a "N running" badge.
-- Status icons (succeeded / failed / in‑progress), relative start time, and a
-  rich hover tooltip with build details.
-- Click a build to open its CloudWatch logs in a read‑only editor tab (fetched
-  via the AWS CLI). "Open in AWS Console" is still available from the right‑click
-  menu.
-- Right-click a project to start a new build (requires `codebuild:StartBuild`).
-- Refresh button in the view title.
+- Tree view in a dedicated **AWS Build & Compute** activity bar container.
+- Each region contains separate **CodeBuild projects** and **EC2 instances**
+  sections. Data is displayed progressively as each AWS CLI page or detail
+  response arrives instead of waiting for every query to finish.
+- CodeBuild projects expand to show their recent build history. Each project
+  loads the first 20 builds, with a **Load more…** item to fetch the next page.
+- Running (in-progress) builds are sorted to the top, display a spinner, and
+  refresh every 90 seconds while any loaded project has an active build.
+- EC2 instances show their lifecycle state and an overall health indicator.
+  Expand an instance to view the three AWS status checks: **System**,
+  **Instance**, and **Attached EBS**.
+- Build status icons, relative start times, rich tooltips, log viewing, and
+  **Start Build** from a project’s right-click menu.
+- Refresh button in the view title updates all expanded regions. Every expandable
+  tree item also has a right-click **Refresh** action for a scoped update.
+  Expanded parents are refreshed sequentially in place without collapsing their
+  tree paths; the active parent shows a spinner while its existing children
+  remain visible.
 
 ## Settings
 
@@ -56,7 +59,10 @@ Under the hood the extension runs:
   pagination), and
 - `aws codebuild batch-get-builds --ids ...` to fetch details for each page,
 - `aws codebuild start-build --project-name <name>` when you start a project from
-  its context menu, and
+  its context menu,
+- `aws ec2 describe-instances` to progressively list instances by region,
+- `aws ec2 describe-instance-status --include-all-instances` to retrieve the
+  system, instance, and attached-EBS health checks, and
 - `aws logs get-log-events --log-group-name <g> --log-stream-name <s>` to load a
   build's logs into an editor tab on demand.
 

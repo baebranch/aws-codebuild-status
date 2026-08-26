@@ -1,7 +1,7 @@
 import { execFile } from "child_process";
 
 /**
- * Thin wrapper around the locally installed AWS CLI for CodeBuild.
+ * Thin wrapper around the locally installed AWS CLI for CodeBuild and EC2.
  *
  * All commands are executed with execFile and an explicit argument array
  * (no shell), so user/AWS supplied values such as region names or build IDs
@@ -32,6 +32,34 @@ export interface CodeBuildBuild {
 
 export interface ListBuildsPage {
   ids: string[];
+  nextToken?: string;
+}
+
+export interface ListProjectsPage {
+  projects: string[];
+  nextToken?: string;
+}
+
+export interface Ec2HealthCheck {
+  status?: string;
+  detail?: string;
+}
+
+export interface Ec2Instance {
+  id: string;
+  name?: string;
+  state?: string;
+  instanceType?: string;
+  availabilityZone?: string;
+  privateIp?: string;
+  publicIp?: string;
+  systemCheck?: Ec2HealthCheck;
+  instanceCheck?: Ec2HealthCheck;
+  ebsCheck?: Ec2HealthCheck;
+}
+
+export interface Ec2InstancesPage {
+  instances: Ec2Instance[];
   nextToken?: string;
 }
 
@@ -132,33 +160,121 @@ export async function startBuild(
   return parsed.build as CodeBuildBuild | undefined;
 }
 
-/**
- * Lists every CodeBuild project name in a region (following pagination),
- * sorted by name ascending.
- */
+export async function listProjectsPage(
+  options: AwsOptions,
+  nextToken?: string
+): Promise<ListProjectsPage> {
+  const args = [
+    "codebuild",
+    "list-projects",
+    "--sort-by",
+    "NAME",
+    "--sort-order",
+    "ASCENDING",
+  ];
+  if (nextToken) {
+    args.push("--next-token", nextToken);
+  }
+  const stdout = await runAws(args, options);
+  const parsed = JSON.parse(stdout || "{}");
+  return {
+    projects: Array.isArray(parsed.projects) ? parsed.projects : [],
+    nextToken: parsed.nextToken || undefined,
+  };
+}
+
+/** Lists every CodeBuild project name in a region (following pagination). */
 export async function listAllProjects(options: AwsOptions): Promise<string[]> {
   const projects: string[] = [];
   let nextToken: string | undefined;
   do {
-    const args = [
-      "codebuild",
-      "list-projects",
-      "--sort-by",
-      "NAME",
-      "--sort-order",
-      "ASCENDING",
-    ];
-    if (nextToken) {
-      args.push("--next-token", nextToken);
-    }
-    const stdout = await runAws(args, options);
-    const parsed = JSON.parse(stdout || "{}");
-    if (Array.isArray(parsed.projects)) {
-      projects.push(...parsed.projects);
-    }
-    nextToken = parsed.nextToken || undefined;
+    const page = await listProjectsPage(options, nextToken);
+    projects.push(...page.projects);
+    nextToken = page.nextToken;
   } while (nextToken);
   return projects;
+}
+
+function healthCheck(status: any): Ec2HealthCheck | undefined {
+  if (!status) {
+    return undefined;
+  }
+  return {
+    status: status.Status,
+    detail: Array.isArray(status.Details) ? status.Details[0]?.Status : undefined,
+  };
+}
+
+function ec2Instance(raw: any): Ec2Instance {
+  const name = Array.isArray(raw.Tags)
+    ? raw.Tags.find((tag: any) => tag.Key === "Name")?.Value
+    : undefined;
+  return {
+    id: raw.InstanceId,
+    name,
+    state: raw.State?.Name,
+    instanceType: raw.InstanceType,
+    availabilityZone: raw.Placement?.AvailabilityZone,
+    privateIp: raw.PrivateIpAddress,
+    publicIp: raw.PublicIpAddress,
+  };
+}
+
+/** Lists one EC2 describe-instances page, flattened across reservations. */
+export async function listEc2InstancesPage(
+  options: AwsOptions,
+  nextToken?: string
+): Promise<Ec2InstancesPage> {
+  const args = ["ec2", "describe-instances", "--max-results", "100"];
+  if (nextToken) {
+    args.push("--next-token", nextToken);
+  }
+  const stdout = await runAws(args, options);
+  const parsed = JSON.parse(stdout || "{}");
+  const instances = Array.isArray(parsed.Reservations)
+    ? parsed.Reservations.flatMap((reservation: any) =>
+        Array.isArray(reservation.Instances) ? reservation.Instances.map(ec2Instance) : []
+      )
+    : [];
+  return { instances, nextToken: parsed.NextToken || parsed.nextToken || undefined };
+}
+
+/** Returns EC2 system, instance, and attached-EBS status checks by instance ID. */
+export async function getEc2InstanceHealth(
+  options: AwsOptions,
+  instanceIds: string[]
+): Promise<Map<string, Pick<Ec2Instance, "systemCheck" | "instanceCheck" | "ebsCheck">>> {
+  if (instanceIds.length === 0) {
+    return new Map();
+  }
+  const stdout = await runAws(
+    [
+      "ec2",
+      "describe-instance-status",
+      "--include-all-instances",
+      "--instance-ids",
+      ...instanceIds,
+    ],
+    options
+  );
+  const parsed = JSON.parse(stdout || "{}");
+  const health = new Map<
+    string,
+    Pick<Ec2Instance, "systemCheck" | "instanceCheck" | "ebsCheck">
+  >();
+  if (Array.isArray(parsed.InstanceStatuses)) {
+    for (const status of parsed.InstanceStatuses) {
+      if (!status.InstanceId) {
+        continue;
+      }
+      health.set(status.InstanceId, {
+        systemCheck: healthCheck(status.SystemStatus),
+        instanceCheck: healthCheck(status.InstanceStatus),
+        ebsCheck: healthCheck(status.AttachedEbsStatus),
+      });
+    }
+  }
+  return health;
 }
 
 /**

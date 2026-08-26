@@ -4,17 +4,39 @@ import {
   CodeBuildTreeProvider,
   LoadMoreNode,
   ProjectNode,
+  RefreshableNode,
 } from "./treeProvider";
 import { LOGS_SCHEME, LogsContentProvider, buildLogUri } from "./logsDocument";
 
+const PENDING_BUILD_REFRESH_INTERVAL_MS = 90_000;
+
 export function activate(context: vscode.ExtensionContext): void {
   const provider = new CodeBuildTreeProvider();
+  let refreshingPendingBuilds = false;
+  const pendingBuildRefreshTimer = setInterval(async () => {
+    if (refreshingPendingBuilds || !provider.hasPendingBuilds()) {
+      return;
+    }
+    refreshingPendingBuilds = true;
+    try {
+      await provider.refreshPendingBuilds();
+    } finally {
+      refreshingPendingBuilds = false;
+    }
+  }, PENDING_BUILD_REFRESH_INTERVAL_MS);
+  context.subscriptions.push(
+    new vscode.Disposable(() => clearInterval(pendingBuildRefreshTimer))
+  );
 
   const view = vscode.window.createTreeView("awsCodeBuild.buildsView", {
     treeDataProvider: provider,
     showCollapseAll: true,
   });
   context.subscriptions.push(view);
+  context.subscriptions.push(
+    view.onDidExpandElement((event) => provider.setExpanded(event.element, true)),
+    view.onDidCollapseElement((event) => provider.setExpanded(event.element, false))
+  );
 
   context.subscriptions.push(
     vscode.workspace.registerTextDocumentContentProvider(
@@ -25,6 +47,23 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("awsCodeBuild.refresh", () => provider.refresh())
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "awsCodeBuild.refreshItem",
+      async (node: RefreshableNode) => {
+        if (!node) {
+          return;
+        }
+        try {
+          await provider.refreshItem(node);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          vscode.window.showErrorMessage(`Unable to refresh item: ${message}`);
+        }
+      }
+    )
   );
 
   context.subscriptions.push(
@@ -83,7 +122,7 @@ export function activate(context: vscode.ExtensionContext): void {
         e.affectsConfiguration("awsCodeBuild.profile") ||
         e.affectsConfiguration("awsCodeBuild.pageSize")
       ) {
-        provider.refresh();
+        provider.refresh(true);
       }
     })
   );
