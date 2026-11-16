@@ -123,6 +123,29 @@ function runAws(args: string[], options: AwsOptions): Promise<string> {
   });
 }
 
+/** Lists named profiles known to the AWS CLI. Returns [] if none or on failure. */
+export function listProfiles(): Promise<string[]> {
+  return new Promise((resolve) => {
+    execFile(
+      AWS_COMMAND,
+      ["configure", "list-profiles"],
+      { windowsHide: true },
+      (error, stdout) => {
+        if (error) {
+          resolve([]);
+          return;
+        }
+        resolve(
+          stdout
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+        );
+      }
+    );
+  });
+}
+
 /** Returns the default region configured for the AWS CLI, if any. */
 export async function getDefaultRegion(options: AwsOptions): Promise<string | undefined> {
   try {

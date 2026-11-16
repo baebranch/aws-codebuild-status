@@ -33,6 +33,13 @@ environment.
 - EC2 instances show their lifecycle state and an overall health indicator.
   Expand an instance to view the three AWS status checks: **System**,
   **Instance**, and **Attached EBS**.
+- **Profile switcher**: click the account icon in the view title bar to pick any
+  profile from `aws configure list-profiles`, or `default`. The choice is pinned
+  to the current workspace (saved in `.vscode/settings.json`), so each project
+  keeps its own profile. With no folder open it is saved in your user settings.
+  The active profile is shown in the view header.
+- Right-click an EC2 instance to **Open Instance in AWS Console** or
+  **Copy Instance ID**.
 - Build status icons, relative start times, rich tooltips, log viewing, and
   **Start Build** from a project’s right-click menu.
 - Refresh button in the view title updates all expanded regions. Every expandable
@@ -46,7 +53,7 @@ environment.
 | Setting | Default | Description |
 | --- | --- | --- |
 | `awsCodeBuild.regions` | `[]` | Regions to query. If empty, the default region from your AWS CLI config is used. |
-| `awsCodeBuild.profile` | `""` | Named AWS CLI profile to use. Empty uses the default profile / environment credentials. |
+| `awsCodeBuild.profile` | `""` | Named AWS CLI profile to use. Empty uses the default profile / environment credentials. The profile picker saves this per workspace. |
 | `awsCodeBuild.pageSize` | `20` | Number of builds to load per page, per region (1–100). |
 
 ## How it works
@@ -58,6 +65,7 @@ Under the hood the extension runs:
   to get build IDs a page at a time (using the CLI's `--starting-token` for
   pagination), and
 - `aws codebuild batch-get-builds --ids ...` to fetch details for each page,
+- `aws configure list-profiles` to populate the profile picker,
 - `aws codebuild start-build --project-name <name>` when you start a project from
   its context menu,
 - `aws ec2 describe-instances` to progressively list instances by region,

@@ -5,6 +5,17 @@ All notable changes to the "AWS Build & Compute Status" extension are documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-11-16
+
+### Added
+
+- **Select AWS Profile** button in the view title bar. Lists profiles from the
+  AWS CLI plus `default`, pins the choice to the current workspace in
+  `awsCodeBuild.profile` (user settings if no folder is open), and refreshes
+  the tree. The active profile is shown in the view header.
+- EC2 instance context menu: **Open Instance in AWS Console** and
+  **Copy Instance ID**.
+
 ## [0.3.0] - 2026-08-26
 
 ### Added

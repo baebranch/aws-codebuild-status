@@ -6,7 +6,8 @@
       "script": "compile",
       "problemMatcher": "$tsc",
       "group": "build",
-      "label": "npm: compile"
+      "label": "npm: compile",
+      "detail": "Build the TypeScript extension output."
     },
     {
       "type": "npm",
@@ -14,7 +15,48 @@
       "problemMatcher": "$tsc-watch",
       "isBackground": true,
       "group": "build",
-      "label": "npm: watch"
+      "label": "npm: watch",
+      "detail": "Continuously compile TypeScript during extension development."
+    },
+    {
+      "type": "npm",
+      "script": "package",
+      "problemMatcher": [],
+      "label": "Release: Package VSIX",
+      "detail": "Compile and create the versioned VSIX artifact with vsce."
+    },
+    {
+      "type": "npm",
+      "script": "publish",
+      "problemMatcher": [],
+      "label": "Release: Publish to Visual Studio Marketplace",
+      "detail": "Publish the current version with vsce; requires Marketplace authentication.",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "type": "npm",
+      "script": "publish:ovsx:vsix",
+      "problemMatcher": [],
+      "label": "Release: Publish VSIX to Open VSX",
+      "detail": "Publish the already-packaged VSIX for the current version to Open VSX; run Package VSIX first. Requires OVSX_PAT.",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "type": "npm",
+      "script": "publish:ovsx",
+      "problemMatcher": [],
+      "label": "Release: Publish to Open VSX",
+      "detail": "Publish the current version with ovsx; requires OVSX_PAT or equivalent authentication.",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
     }
   ]
 }

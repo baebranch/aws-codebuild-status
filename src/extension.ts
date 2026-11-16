@@ -2,13 +2,19 @@ import * as vscode from "vscode";
 import {
   BuildNode,
   CodeBuildTreeProvider,
+  InstanceNode,
   LoadMoreNode,
   ProjectNode,
   RefreshableNode,
 } from "./treeProvider";
+import { listProfiles } from "./aws";
 import { LOGS_SCHEME, LogsContentProvider, buildLogUri } from "./logsDocument";
 
 const PENDING_BUILD_REFRESH_INTERVAL_MS = 90_000;
+
+function currentProfile(): string {
+  return vscode.workspace.getConfiguration("awsCodeBuild").get<string>("profile", "") || "";
+}
 
 export function activate(context: vscode.ExtensionContext): void {
   const provider = new CodeBuildTreeProvider();
@@ -33,6 +39,71 @@ export function activate(context: vscode.ExtensionContext): void {
     showCollapseAll: true,
   });
   context.subscriptions.push(view);
+
+  const updateProfileLabel = (): void => {
+    const profile = currentProfile();
+    view.description = profile ? `Profile: ${profile}` : "Profile: default";
+  };
+  updateProfileLabel();
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("awsCodeBuild.selectProfile", async () => {
+      const profiles = await listProfiles();
+      const current = currentProfile();
+      const items: (vscode.QuickPickItem & { value: string })[] = [
+        {
+          label: "default",
+          description: "Default profile / environment credentials",
+          picked: !current,
+          value: "",
+        },
+        ...profiles
+          .filter((p) => p !== "default")
+          .map((p) => ({ label: p, picked: p === current, value: p })),
+      ];
+      const choice = await vscode.window.showQuickPick(items, {
+        title: "Select AWS Profile",
+        placeHolder: current ? `Current: ${current}` : "Current: default",
+      });
+      if (!choice || choice.value === current) {
+        return;
+      }
+      // Pin to the workspace when one is open; otherwise fall back to user settings.
+      // The configuration change listener below refreshes the tree.
+      const hasWorkspace = (vscode.workspace.workspaceFolders?.length ?? 0) > 0;
+      await vscode.workspace
+        .getConfiguration("awsCodeBuild")
+        .update(
+          "profile",
+          choice.value,
+          hasWorkspace
+            ? vscode.ConfigurationTarget.Workspace
+            : vscode.ConfigurationTarget.Global
+        );
+    }),
+    vscode.commands.registerCommand("awsCodeBuild.copyInstanceId", async (node: InstanceNode) => {
+      if (node?.instance?.id) {
+        await vscode.env.clipboard.writeText(node.instance.id);
+        vscode.window.setStatusBarMessage(`Copied ${node.instance.id}`, 3000);
+      }
+    }),
+    vscode.commands.registerCommand(
+      "awsCodeBuild.openInstanceInConsole",
+      (node: InstanceNode) => {
+        if (!node?.instance?.id) {
+          return;
+        }
+        const region = encodeURIComponent(node.region);
+        const id = encodeURIComponent(node.instance.id);
+        vscode.env.openExternal(
+          vscode.Uri.parse(
+            `https://${region}.console.aws.amazon.com/ec2/home?region=${region}#InstanceDetails:instanceId=${id}`
+          )
+        );
+      }
+    )
+  );
+
   context.subscriptions.push(
     view.onDidExpandElement((event) => provider.setExpanded(event.element, true)),
     view.onDidCollapseElement((event) => provider.setExpanded(event.element, false))
@@ -122,6 +193,7 @@ export function activate(context: vscode.ExtensionContext): void {
         e.affectsConfiguration("awsCodeBuild.profile") ||
         e.affectsConfiguration("awsCodeBuild.pageSize")
       ) {
+        updateProfileLabel();
         provider.refresh(true);
       }
     })

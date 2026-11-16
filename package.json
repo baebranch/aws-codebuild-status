@@ -2,7 +2,7 @@
   "name": "aws-codebuild-status",
   "displayName": "AWS Build & Compute Status",
   "description": "View AWS CodeBuild and EC2 instance status in a regional tree using your local AWS CLI.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "baebranch",
   "author": {
     "name": "Brian Branch"
@@ -88,6 +88,24 @@
         "icon": "$(link-external)"
       },
       {
+        "command": "awsCodeBuild.selectProfile",
+        "title": "Select AWS Profile",
+        "category": "AWS Build & Compute",
+        "icon": "$(account)"
+      },
+      {
+        "command": "awsCodeBuild.openInstanceInConsole",
+        "title": "Open Instance in AWS Console",
+        "category": "AWS Build & Compute",
+        "icon": "$(link-external)"
+      },
+      {
+        "command": "awsCodeBuild.copyInstanceId",
+        "title": "Copy Instance ID",
+        "category": "AWS Build & Compute",
+        "icon": "$(copy)"
+      },
+      {
         "command": "awsCodeBuild.openLogs",
         "title": "View Build Logs",
         "category": "AWS Build & Compute",
@@ -96,6 +114,11 @@
     ],
     "menus": {
       "view/title": [
+        {
+          "command": "awsCodeBuild.selectProfile",
+          "when": "view == awsCodeBuild.buildsView",
+          "group": "navigation@0"
+        },
         {
           "command": "awsCodeBuild.refresh",
           "when": "view == awsCodeBuild.buildsView",
@@ -129,6 +152,16 @@
           "group": "navigation"
         },
         {
+          "command": "awsCodeBuild.openInstanceInConsole",
+          "when": "view == awsCodeBuild.buildsView && viewItem == instance",
+          "group": "1_instance@1"
+        },
+        {
+          "command": "awsCodeBuild.copyInstanceId",
+          "when": "view == awsCodeBuild.buildsView && viewItem == instance",
+          "group": "1_instance@2"
+        },
+        {
           "command": "awsCodeBuild.startBuild",
           "when": "view == awsCodeBuild.buildsView && viewItem == project",
           "group": "navigation"
@@ -158,7 +191,7 @@
         "awsCodeBuild.profile": {
           "type": "string",
           "default": "",
-          "description": "AWS CLI named profile to use. If empty, the default profile / environment credentials are used."
+          "description": "AWS CLI named profile to use. If empty, the default profile / environment credentials are used. The profile picker saves this per workspace when a folder is open."
         },
         "awsCodeBuild.pageSize": {
           "type": "number",
@@ -176,7 +209,8 @@
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
     "publish": "vsce publish",
-    "publish:ovsx": "ovsx publish"
+    "publish:ovsx": "ovsx publish",
+    "publish:ovsx:vsix": "node scripts/publish-ovsx-vsix.js"
   },
   "devDependencies": {
     "@types/node": "^18.19.0",
