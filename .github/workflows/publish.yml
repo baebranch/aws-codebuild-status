@@ -1,8 +1,10 @@
 name: Publish Extension
 
 # Publishes the extension to the Visual Studio Marketplace and Open VSX on every
-# push to main. Each registry is skipped if the current package.json version is
-# already published there, so pushes that don't bump the version are no-ops.
+# push to main, then creates a GitHub release (tag v<version>, CHANGELOG notes,
+# and the .vsix attached). Each step is skipped if the current package.json
+# version is already published / released, so pushes that don't bump the
+# version are no-ops.
 on:
   push:
     branches: [main]
@@ -126,3 +128,59 @@ jobs:
             exit 1
           fi
           node scripts/publish-ovsx-vsix.js
+
+  # Runs only when both publish jobs succeed (including "already published"
+  # skips), so a failed upload never produces a release.
+  github-release:
+    name: Create GitHub release
+    needs: [package, publish-vscode, publish-ovsx]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TAG: v${{ needs.package.outputs.version }}
+      VERSION: ${{ needs.package.outputs.version }}
+      VSIX: ${{ needs.package.outputs.vsix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for an existing release
+        id: exists
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Release $TAG already exists; skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/download-artifact@v4
+        if: steps.exists.outputs.exists != 'true'
+        with:
+          name: vsix
+
+      # Release notes are the "## [x.y.z]" section of CHANGELOG.md.
+      - name: Extract release notes
+        if: steps.exists.outputs.exists != 'true'
+        run: |
+          awk -v header="## [$VERSION]" '
+            index($0, header) == 1 { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "::warning::No CHANGELOG.md section for $VERSION; using a default note."
+            echo "Release $TAG" > release-notes.md
+          fi
+          cat release-notes.md
+
+      # If the tag was already pushed it is reused; otherwise gh creates it on
+      # the commit this workflow built.
+      - name: Create release
+        if: steps.exists.outputs.exists != 'true'
+        run: |
+          gh release create "$TAG" "$VSIX" \
+            --title "$TAG" \
+            --notes-file release-notes.md \
+            --target "$GITHUB_SHA"
