@@ -1,0 +1,128 @@
+name: Publish Extension
+
+# Publishes the extension to the Visual Studio Marketplace and Open VSX on every
+# push to main. Each registry is skipped if the current package.json version is
+# already published there, so pushes that don't bump the version are no-ops.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Never run two publishes at once; let an in-flight publish finish.
+concurrency:
+  group: publish-extension
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: Build & package VSIX
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.meta.outputs.name }}
+      version: ${{ steps.meta.outputs.version }}
+      publisher: ${{ steps.meta.outputs.publisher }}
+      vsix: ${{ steps.meta.outputs.vsix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Read package metadata
+        id: meta
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          publisher=$(node -p "require('./package.json').publisher")
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "publisher=$publisher" >> "$GITHUB_OUTPUT"
+          echo "vsix=$name-$version.vsix" >> "$GITHUB_OUTPUT"
+
+      # vsce runs the vscode:prepublish script (npm run compile) itself.
+      - name: Package
+        run: npx vsce package --out "${{ steps.meta.outputs.vsix }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: ${{ steps.meta.outputs.vsix }}
+          if-no-files-found: error
+
+  publish-vscode:
+    name: Publish to VS Marketplace
+    needs: package
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: vsix
+
+      # --skip-duplicate exits successfully if this version is already published.
+      - name: Publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [ -z "$VSCE_PAT" ]; then
+            echo "::error::VSCE_PAT secret is not set on the 'release' environment."
+            exit 1
+          fi
+          npx vsce publish --packagePath "${{ needs.package.outputs.vsix }}" --skip-duplicate
+
+  publish-ovsx:
+    name: Publish to Open VSX
+    needs: package
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: vsix
+
+      - name: Check whether this version is already on Open VSX
+        id: exists
+        run: |
+          url="https://open-vsx.org/api/${{ needs.package.outputs.publisher }}/${{ needs.package.outputs.name }}/${{ needs.package.outputs.version }}"
+          status=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+          echo "GET $url -> $status"
+          if [ "$status" = "200" ]; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::v${{ needs.package.outputs.version }} is already on Open VSX; skipping."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Same script as the "Release: Publish VSIX to Open VSX" task; it uploads
+      # the identical VSIX that went to the Marketplace.
+      - name: Publish
+        if: steps.exists.outputs.published != 'true'
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then
+            echo "::error::OVSX_PAT secret is not set on the 'release' environment."
+            exit 1
+          fi
+          node scripts/publish-ovsx-vsix.js

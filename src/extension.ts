@@ -6,6 +6,11 @@ import {
   LoadMoreNode,
   ProjectNode,
   RefreshableNode,
+  VolumeNode,
+  SnapshotNode,
+  RepositoryNode,
+  ImageNode,
+  AddressNode,
 } from "./treeProvider";
 import { listProfiles } from "./aws";
 import { LOGS_SCHEME, LogsContentProvider, buildLogUri } from "./logsDocument";
@@ -17,7 +22,7 @@ function currentProfile(): string {
 }
 
 export function activate(context: vscode.ExtensionContext): void {
-  const provider = new CodeBuildTreeProvider();
+  const provider = new CodeBuildTreeProvider(context.globalState);
   let refreshingPendingBuilds = false;
   const pendingBuildRefreshTimer = setInterval(async () => {
     if (refreshingPendingBuilds || !provider.hasPendingBuilds()) {
@@ -87,6 +92,40 @@ export function activate(context: vscode.ExtensionContext): void {
         vscode.window.setStatusBarMessage(`Copied ${node.instance.id}`, 3000);
       }
     }),
+    registerCopy("awsCodeBuild.copySnapshotId", (node: SnapshotNode) => node?.snapshot?.id),
+    registerCopy("awsCodeBuild.copySnapshotVolumeId", (node: SnapshotNode) => node?.snapshot?.volumeId),
+    registerCopy("awsCodeBuild.copyRepositoryUri", (node: RepositoryNode) => node?.repository?.uri),
+    registerCopy("awsCodeBuild.copyImageUri", (node: ImageNode) => node?.uri),
+    registerCopy("awsCodeBuild.copyImageDigest", (node: ImageNode) => node?.image?.digest),
+    registerCopy("awsCodeBuild.copyPublicIp", (node: AddressNode) => node?.address?.publicIp),
+    registerCopy("awsCodeBuild.copyAllocationId", (node: AddressNode) => node?.address?.allocationId),
+    registerCopy(
+      "awsCodeBuild.copyAddressTargetId",
+      (node: AddressNode) => node?.address?.instanceId ?? node?.address?.networkInterfaceId
+    ),
+    vscode.commands.registerCommand("awsCodeBuild.hideTerminated", () =>
+      provider.setHideTerminated(true)
+    ),
+    vscode.commands.registerCommand("awsCodeBuild.showTerminated", () =>
+      provider.setHideTerminated(false)
+    ),
+    vscode.commands.registerCommand("awsCodeBuild.copyVolumeId", async (node: VolumeNode) => {
+      if (node?.volume?.id) {
+        await vscode.env.clipboard.writeText(node.volume.id);
+        vscode.window.setStatusBarMessage(`Copied ${node.volume.id}`, 3000);
+      }
+    }),
+    vscode.commands.registerCommand(
+      "awsCodeBuild.copyVolumeInstanceId",
+      async (node: VolumeNode) => {
+        const ids = node?.volume?.attachedInstanceIds ?? [];
+        if (ids.length > 0) {
+          const text = ids.join(",");
+          await vscode.env.clipboard.writeText(text);
+          vscode.window.setStatusBarMessage(`Copied ${text}`, 3000);
+        }
+      }
+    ),
     vscode.commands.registerCommand(
       "awsCodeBuild.openInstanceInConsole",
       (node: InstanceNode) => {
@@ -198,6 +237,17 @@ export function activate(context: vscode.ExtensionContext): void {
       }
     })
   );
+}
+
+/** Registers a command that copies a value derived from the clicked tree node. */
+function registerCopy<T>(command: string, valueOf: (node: T) => string | undefined): vscode.Disposable {
+  return vscode.commands.registerCommand(command, async (node: T) => {
+    const value = valueOf(node);
+    if (value) {
+      await vscode.env.clipboard.writeText(value);
+      vscode.window.setStatusBarMessage(`Copied ${value}`, 3000);
+    }
+  });
 }
 
 export function deactivate(): void {

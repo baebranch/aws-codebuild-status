@@ -1,8 +1,8 @@
 {
   "name": "aws-codebuild-status",
   "displayName": "AWS Build & Compute Status",
-  "description": "View AWS CodeBuild and EC2 instance status in a regional tree using your local AWS CLI.",
-  "version": "0.4.0",
+  "description": "View AWS CodeBuild builds, EC2 instances, EBS volumes and snapshots, ECR images, and Elastic IPs in a regional tree using your local AWS CLI.",
+  "version": "0.5.0",
   "publisher": "baebranch",
   "author": {
     "name": "Brian Branch"
@@ -21,6 +21,9 @@
     "aws",
     "codebuild",
     "ec2",
+    "ebs",
+    "ecr",
+    "elastic ip",
     "ci",
     "build",
     "instance",
@@ -106,6 +109,71 @@
         "icon": "$(copy)"
       },
       {
+        "command": "awsCodeBuild.copySnapshotId",
+        "title": "Copy Snapshot ID",
+        "category": "AWS Build & Compute",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "awsCodeBuild.copySnapshotVolumeId",
+        "title": "Copy Source Volume ID",
+        "category": "AWS Build & Compute"
+      },
+      {
+        "command": "awsCodeBuild.copyRepositoryUri",
+        "title": "Copy Repository URI",
+        "category": "AWS Build & Compute",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "awsCodeBuild.copyImageUri",
+        "title": "Copy Image URI",
+        "category": "AWS Build & Compute",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "awsCodeBuild.copyImageDigest",
+        "title": "Copy Image Digest",
+        "category": "AWS Build & Compute"
+      },
+      {
+        "command": "awsCodeBuild.copyPublicIp",
+        "title": "Copy Public IP",
+        "category": "AWS Build & Compute",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "awsCodeBuild.copyAllocationId",
+        "title": "Copy Allocation ID",
+        "category": "AWS Build & Compute"
+      },
+      {
+        "command": "awsCodeBuild.copyAddressTargetId",
+        "title": "Copy Attached Instance / ENI ID",
+        "category": "AWS Build & Compute"
+      },
+      {
+        "command": "awsCodeBuild.hideTerminated",
+        "title": "Hide Terminated Instances",
+        "category": "AWS Build & Compute"
+      },
+      {
+        "command": "awsCodeBuild.showTerminated",
+        "title": "Show Terminated Instances",
+        "category": "AWS Build & Compute"
+      },
+      {
+        "command": "awsCodeBuild.copyVolumeId",
+        "title": "Copy Volume ID",
+        "category": "AWS Build & Compute",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "awsCodeBuild.copyVolumeInstanceId",
+        "title": "Copy Attached Instance ID",
+        "category": "AWS Build & Compute"
+      },
+      {
         "command": "awsCodeBuild.openLogs",
         "title": "View Build Logs",
         "category": "AWS Build & Compute",
@@ -138,8 +206,103 @@
         },
         {
           "command": "awsCodeBuild.refreshItem",
-          "when": "view == awsCodeBuild.buildsView && viewItem == instancesSection",
+          "when": "view == awsCodeBuild.buildsView && viewItem =~ /^instancesSection/",
           "group": "navigation"
+        },
+        {
+          "command": "awsCodeBuild.hideTerminated",
+          "when": "view == awsCodeBuild.buildsView && viewItem == instancesSection",
+          "group": "1_filter"
+        },
+        {
+          "command": "awsCodeBuild.showTerminated",
+          "when": "view == awsCodeBuild.buildsView && viewItem == instancesSection.hidingTerminated",
+          "group": "1_filter"
+        },
+        {
+          "command": "awsCodeBuild.refreshItem",
+          "when": "view == awsCodeBuild.buildsView && viewItem == volumesSection",
+          "group": "navigation"
+        },
+        {
+          "command": "awsCodeBuild.copyVolumeId",
+          "when": "view == awsCodeBuild.buildsView && viewItem =~ /^volume(Attached)?$/",
+          "group": "inline"
+        },
+        {
+          "command": "awsCodeBuild.refreshItem",
+          "when": "view == awsCodeBuild.buildsView && viewItem == resourceSection",
+          "group": "navigation"
+        },
+        {
+          "command": "awsCodeBuild.refreshItem",
+          "when": "view == awsCodeBuild.buildsView && viewItem == repository",
+          "group": "navigation"
+        },
+        {
+          "command": "awsCodeBuild.copySnapshotId",
+          "when": "view == awsCodeBuild.buildsView && viewItem == snapshot",
+          "group": "inline"
+        },
+        {
+          "command": "awsCodeBuild.copySnapshotId",
+          "when": "view == awsCodeBuild.buildsView && viewItem == snapshot",
+          "group": "1_copy@1"
+        },
+        {
+          "command": "awsCodeBuild.copySnapshotVolumeId",
+          "when": "view == awsCodeBuild.buildsView && viewItem == snapshot",
+          "group": "1_copy@2"
+        },
+        {
+          "command": "awsCodeBuild.copyRepositoryUri",
+          "when": "view == awsCodeBuild.buildsView && viewItem == repository",
+          "group": "inline"
+        },
+        {
+          "command": "awsCodeBuild.copyRepositoryUri",
+          "when": "view == awsCodeBuild.buildsView && viewItem == repository",
+          "group": "1_copy@1"
+        },
+        {
+          "command": "awsCodeBuild.copyImageUri",
+          "when": "view == awsCodeBuild.buildsView && viewItem == image",
+          "group": "inline"
+        },
+        {
+          "command": "awsCodeBuild.copyImageUri",
+          "when": "view == awsCodeBuild.buildsView && viewItem == image",
+          "group": "1_copy@1"
+        },
+        {
+          "command": "awsCodeBuild.copyImageDigest",
+          "when": "view == awsCodeBuild.buildsView && viewItem == image",
+          "group": "1_copy@2"
+        },
+        {
+          "command": "awsCodeBuild.copyPublicIp",
+          "when": "view == awsCodeBuild.buildsView && viewItem =~ /^address(Attached)?$/",
+          "group": "inline"
+        },
+        {
+          "command": "awsCodeBuild.copyPublicIp",
+          "when": "view == awsCodeBuild.buildsView && viewItem =~ /^address(Attached)?$/",
+          "group": "1_copy@1"
+        },
+        {
+          "command": "awsCodeBuild.copyAllocationId",
+          "when": "view == awsCodeBuild.buildsView && viewItem =~ /^address(Attached)?$/",
+          "group": "1_copy@2"
+        },
+        {
+          "command": "awsCodeBuild.copyAddressTargetId",
+          "when": "view == awsCodeBuild.buildsView && viewItem == addressAttached",
+          "group": "1_copy@3"
+        },
+        {
+          "command": "awsCodeBuild.copyVolumeInstanceId",
+          "when": "view == awsCodeBuild.buildsView && viewItem == volumeAttached",
+          "group": "1_volume@2"
         },
         {
           "command": "awsCodeBuild.refreshItem",
@@ -186,7 +349,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "AWS regions to query for CodeBuild projects and EC2 instances. If empty, the default region from your AWS CLI configuration is used."
+          "description": "AWS regions to query for CodeBuild, EC2, EBS, ECR, and Elastic IP resources. If empty, the default region from your AWS CLI configuration is used."
         },
         "awsCodeBuild.profile": {
           "type": "string",

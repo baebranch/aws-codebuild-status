@@ -5,6 +5,36 @@ All notable changes to the "AWS Build & Compute Status" extension are documented
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-11-21
+
+### Added
+
+- **EBS volumes** section per region. Rows show the volume name and ID, state,
+  size, and the instance(s) each volume is attached to; tooltips include type,
+  IOPS, availability zone, encryption, and attachment devices. Inline
+  **Copy Volume ID** and a **Copy Attached Instance ID** context action.
+- **EBS snapshots** section listing snapshots owned by the account (newest
+  first) with state/progress, size, age, and source volume. **Copy Snapshot ID**
+  and **Copy Source Volume ID** actions.
+- **ECR repositories** section. Repositories expand to list their images
+  (newest push first) with tags, short digest, size, push/pull times, and scan
+  status. **Copy Repository URI**, **Copy Image URI**, and **Copy Image Digest**
+  actions.
+- **Elastic IPs** section showing what each address is associated with:
+  instance name and ID, or the network interface type/description for NAT
+  gateways, load balancers, and other ENIs. Tooltips include allocation and
+  association IDs, private IP, VPC, and subnet. **Copy Public IP**,
+  **Copy Allocation ID**, and **Copy Attached Instance / ENI ID** actions.
+- **Hide / Show Terminated Instances** in the EC2 instances context menu. The
+  choice is stored globally per AWS profile. While hidden, counts are shown as
+  `visible/total` (e.g. `4/6`).
+- Region rows summarise loaded counts for every section.
+
+### Fixed
+
+- EC2 instances without an attached EBS status check no longer stay stuck on the
+  loading spinner; they show a pass icon and an `N/2 checks passed` summary.
+
 ## [0.4.0] - 2026-11-16
 
 ### Added
